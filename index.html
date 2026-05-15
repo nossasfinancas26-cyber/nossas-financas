@@ -65,7 +65,7 @@ main{padding:24px 28px;max-width:1400px;margin:0 auto}
 .panel{display:none}.panel.on{display:block}
 
 /* KPI CARDS */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;min-height:120px}
 .kpi-grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
 .kpi{background:var(--surface);border-radius:16px;padding:20px 22px;position:relative;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid var(--border);transition:box-shadow .2s}
 .kpi:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
@@ -174,6 +174,20 @@ tr:hover td{background:#f8f9fc}
 .scroll-t::-webkit-scrollbar{width:4px}
 .scroll-t::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
+/* CONTAS A PAGAR */
+.conta-sel{font-family:var(--mono);font-size:11px;border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;outline:none;background:#fff;font-weight:600;width:130px;transition:all .15s}
+.conta-sel.pago{background:#dcfce7;color:var(--green);border-color:#86efac}
+.conta-sel.pendente{background:#fef9c3;color:#854d0e;border-color:#fde047}
+.conta-sel.vencido{background:#fee2e2;color:var(--red);border-color:#fca5a5}
+.conta-row{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .15s}
+.conta-row:last-child{border-bottom:none}
+.conta-row:hover{background:var(--surface2)}
+.conta-info{flex:1}
+.conta-nome{font-size:13px;font-weight:600;color:var(--text)}
+.conta-venc{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+.conta-valor{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text);margin:0 20px}
+.add-conta-row{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);background:var(--surface2);flex-wrap:wrap}
+
 @media(max-width:900px){
   main,header,nav{padding-left:14px;padding-right:14px}
   .kpi-grid{grid-template-columns:1fr 1fr;gap:12px}
@@ -256,6 +270,28 @@ tr:hover td{background:#f8f9fc}
     <div class="table-card">
       <div class="table-head"><div class="table-title">Balanço do Mês</div></div>
       <div style="padding:20px" id="balanco-chart"></div>
+    </div>
+  </div>
+
+  <!-- CONTAS A PAGAR -->
+  <div class="g2">
+    <div class="table-card">
+      <div class="table-head">
+        <div class="table-title">✅ Contas Pagas / Pendentes</div>
+        <div class="table-badge" id="cnt-contas">0 contas</div>
+      </div>
+      <div id="lista-contas"></div>
+      <div class="add-conta-row">
+        <input class="form-input" id="nome-conta" placeholder="Nome da conta" style="flex:2;min-width:120px">
+        <input class="form-input" id="valor-conta" type="number" placeholder="Valor" style="width:100px" step="0.01" min="0">
+        <input class="form-input" id="venc-conta" type="date" style="width:130px">
+        <button class="btn" onclick="addConta()" style="padding:9px 16px">+ Adicionar</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-head"><div class="table-title">📊 Resumo de Contas</div></div>
+      <div style="padding:20px" id="resumo-contas"></div>
     </div>
   </div>
 </div>
@@ -534,6 +570,8 @@ function carregarDoFirebase(){
     ind.textContent = '✓ Offline';
     renderTudo();
   });
+  // Renderiza imediatamente com dados locais
+  renderTudo();
 
   // Listener tempo real
   db.collection('financas').doc(chave()).onSnapshot(function(doc){
@@ -652,6 +690,37 @@ function delMeta(mid){
 // ============================================================
 function renderTudo(){ renderResumo(); renderLancamentos(); renderCartao(); renderInvestimentos(); renderMetas(); }
 
+// ============================================================
+// CONTAS A PAGAR
+// ============================================================
+function addConta(){
+  var nome = document.getElementById('nome-conta').value.trim();
+  var valor = parseFloat(document.getElementById('valor-conta').value)||0;
+  var venc = document.getElementById('venc-conta').value;
+  if(!nome){ alert('Digite o nome da conta!'); return; }
+  if(!DADOS.contas) DADOS.contas = [];
+  DADOS.contas.push({ id:id(), nome:nome, valor:valor, venc:venc, status:'pendente' });
+  document.getElementById('nome-conta').value = '';
+  document.getElementById('valor-conta').value = '';
+  salvar(); renderResumo();
+}
+
+function mudarStatusConta(sel){
+  var cid = sel.getAttribute('data-id');
+  var status = sel.value;
+  sel.className = 'conta-sel ' + status;
+  if(!DADOS.contas) return;
+  for(var i=0;i<DADOS.contas.length;i++){
+    if(DADOS.contas[i].id===cid){ DADOS.contas[i].status=status; break; }
+  }
+  salvar(); renderResumo();
+}
+
+function delConta(cid){
+  DADOS.contas = (DADOS.contas||[]).filter(function(c){ return c.id!==cid; });
+  salvar(); renderResumo();
+}
+
 function renderResumo(){
   var lancs = DADOS.lancamentos || [];
   var cart = DADOS.cartao || [];
@@ -694,6 +763,43 @@ function renderResumo(){
     return '<div class="cat-item"><span class="cat-dot" style="background:'+cores[i%cores.length]+'"></span><span class="cat-nome">'+e[0]+'</span><div style="flex:1;margin:0 10px"><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+cores[i%cores.length]+'"></div></div></div><span class="cat-val" style="color:'+cores[i%cores.length]+'">'+brl(e[1])+'</span></div>';
   }).join('');
   document.getElementById('cat-chart').innerHTML = catHtml || '<div style="color:var(--muted);text-align:center;padding:20px">Sem dados</div>';
+
+  // Contas
+  var contas = DADOS.contas || [];
+  document.getElementById('cnt-contas').textContent = contas.length + ' contas';
+  document.getElementById('lista-contas').innerHTML = contas.length ? contas.map(function(c){
+    var cls = c.status==='pago' ? 'pago' : c.status==='vencido' ? 'vencido' : 'pendente';
+    var vencStr = c.venc ? 'Venc: '+new Date(c.venc+'T12:00:00').toLocaleDateString('pt-BR') : 'Sem vencimento';
+    return '<div class="conta-row">'
+      +'<div class="conta-info"><div class="conta-nome">'+c.nome+'</div><div class="conta-venc">'+vencStr+'</div></div>'
+      +(c.valor?'<div class="conta-valor">'+brl(c.valor)+'</div>':'<div class="conta-valor" style="color:var(--muted)">—</div>')
+      +'<select class="conta-sel '+cls+'" data-id="'+c.id+'" onchange="mudarStatusConta(this)">'
+      +'<option value="pendente"'+(c.status==='pendente'?' selected':'')+'>⏳ Pendente</option>'
+      +'<option value="pago"'+(c.status==='pago'?' selected':'')+'>✅ Pago</option>'
+      +'<option value="vencido"'+(c.status==='vencido'?' selected':'')+'>🔴 Vencido</option>'
+      +'</select>'
+      +'<button class="del-btn" onclick="delConta(''+c.id+'')" style="margin-left:8px">✕</button>'
+      +'</div>';
+  }).join('') : '<div style="color:var(--muted);text-align:center;padding:20px;font-size:13px">Nenhuma conta cadastrada</div>';
+
+  var totalPago = contas.filter(function(c){return c.status==='pago';}).reduce(function(a,c){return a+(c.valor||0);},0);
+  var totalPend = contas.filter(function(c){return c.status==='pendente';}).reduce(function(a,c){return a+(c.valor||0);},0);
+  var totalVenc = contas.filter(function(c){return c.status==='vencido';}).reduce(function(a,c){return a+(c.valor||0);},0);
+  var qtdPago = contas.filter(function(c){return c.status==='pago';}).length;
+  var qtdPend = contas.filter(function(c){return c.status==='pendente';}).length;
+  var qtdVenc = contas.filter(function(c){return c.status==='vencido';}).length;
+  document.getElementById('resumo-contas').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:14px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#dcfce7;border-radius:10px;border:1px solid #86efac">'
+    +'<div><div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px">✅ Pagas</div><div style="font-family:var(--mono);font-size:10px;color:var(--green2);margin-top:2px">'+qtdPago+' conta(s)</div></div>'
+    +'<div style="font-family:var(--mono);font-size:20px;font-weight:800;color:var(--green)">'+brl(totalPago)+'</div></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#fef9c3;border-radius:10px;border:1px solid #fde047">'
+    +'<div><div style="font-size:12px;font-weight:700;color:#854d0e;text-transform:uppercase;letter-spacing:.5px">⏳ Pendentes</div><div style="font-family:var(--mono);font-size:10px;color:#854d0e;margin-top:2px">'+qtdPend+' conta(s)</div></div>'
+    +'<div style="font-family:var(--mono);font-size:20px;font-weight:800;color:#854d0e">'+brl(totalPend)+'</div></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#fee2e2;border-radius:10px;border:1px solid #fca5a5">'
+    +'<div><div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px">🔴 Vencidas</div><div style="font-family:var(--mono);font-size:10px;color:var(--red);margin-top:2px">'+qtdVenc+' conta(s)</div></div>'
+    +'<div style="font-family:var(--mono);font-size:20px;font-weight:800;color:var(--red)">'+brl(totalVenc)+'</div></div>'
+    +'</div>';
 
   // Balanço
   document.getElementById('balanco-chart').innerHTML =
