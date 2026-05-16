@@ -778,7 +778,7 @@ function renderResumo(){
       +'<option value="pago"'+(c.status==='pago'?' selected':'')+'>✅ Pago</option>'
       +'<option value="vencido"'+(c.status==='vencido'?' selected':'')+'>🔴 Vencido</option>'
       +'</select>'
-      +'<button class="del-btn" onclick="delConta(''+c.id+'')" style="margin-left:8px">✕</button>'
+      +'<button class="del-btn" onclick="delConta(\''+c.id+'\')" style="margin-left:8px">✕</button>'
       +'</div>';
   }).join('') : '<div style="color:var(--muted);text-align:center;padding:20px;font-size:13px">Nenhuma conta cadastrada</div>';
 
