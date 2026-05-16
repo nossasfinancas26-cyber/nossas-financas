@@ -155,13 +155,13 @@ tr:hover td{background:#f8f9fc}
 .comp-nome{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
 .comp-meta{font-family:var(--mono);font-size:10px;color:var(--muted)}
 .comp-link{background:#eff6ff;color:var(--blue);border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;text-decoration:none;font-family:var(--font);font-weight:600}
-.upload-area{border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;background:var(--surface2);position:relative}
+.upload-area{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;background:var(--surface2);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:120px;user-select:none}
 .upload-area:hover,.upload-area.drag{border-color:var(--blue);background:#eff6ff}
-/* FIX 1: Previne que elementos filhos capturem eventos de drag, causando ghost divs */
-.upload-area *{pointer-events:none}
-.upload-area input{display:none;pointer-events:auto}
-.upload-icon{font-size:32px;margin-bottom:8px}
-.upload-text{font-size:13px;color:var(--muted)}
+/* FIX: todos os filhos sem pointer-events e sem bordas/display inesperados */
+.upload-area > *{pointer-events:none}
+.upload-area input[type="file"]{display:none !important;position:absolute;width:0;height:0;opacity:0;pointer-events:none}
+.upload-icon{font-size:32px;line-height:1;display:block}
+.upload-text{font-size:13px;color:var(--muted);display:block}
 .upload-text strong{color:var(--blue)}
 .status-drive{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-size:12px;margin-bottom:14px;flex-wrap:wrap}
 .status-drive.ok{background:#dcfce7;border:1px solid #86efac;color:var(--green)}
@@ -354,20 +354,17 @@ tr:hover td{background:#f8f9fc}
         </button>
       </div>
       <div id="upload-section" style="display:none">
-        <!--
-          FIX 2 & 3: O atributo ondragleave agora passa o evento (e) para a função dragLeave,
-          que usa e.relatedTarget para verificar se o mouse saiu de verdade da área.
-          Isso evita que os elementos filhos do label gerem eventos fantasmas.
-        -->
-        <label class="upload-area" id="upload-area"
+        <!-- Área de drop: DIV em vez de LABEL elimina o ghost rendering do browser -->
+        <div class="upload-area" id="upload-area"
+          onclick="document.getElementById('arquivo-comp').click()"
           ondrop="dropArquivo(event)"
           ondragover="dragOver(event)"
           ondragleave="dragLeave(event)">
           <input type="file" id="arquivo-comp" accept="image/*,.pdf" onchange="selecionarArquivo(this)">
-          <div class="upload-icon" style="font-size:28px;margin-bottom:8px">📎</div>
-          <div class="upload-text" style="font-size:13px">Arraste o comprovante ou <strong>clique para selecionar</strong></div>
-          <div id="arquivo-nome" style="margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--green)"></div>
-        </label>
+          <span class="upload-icon">📎</span>
+          <span class="upload-text">Arraste o comprovante ou <strong>clique para selecionar</strong></span>
+          <span id="arquivo-nome" style="font-family:var(--mono);font-size:11px;color:var(--green);display:block"></span>
+        </div>
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
           <button class="btn" onclick="uploadComprovante()" id="btn-upload" disabled style="opacity:.5;flex:1">⬆ Enviar Comprovante</button>
           <div id="upload-prog" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></div>
