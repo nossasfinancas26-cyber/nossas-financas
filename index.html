@@ -909,16 +909,21 @@ function loginDrive(){
     client_id: CLIENT_ID,
     scope: SCOPES,
     callback: function(resp){
-      if(resp.error) return;
+      if(resp.error){ console.log('Drive erro:', resp.error); return; }
       driveToken = resp.access_token;
-      document.getElementById('drive-status').className = 'status-drive ok';
-      document.getElementById('drive-status-txt').textContent = '✓ Conectado ao Google Drive';
-      document.getElementById('btn-login-drive').textContent = '✓ Conectado';
-      document.getElementById('upload-section').style.display = 'block';
+      var s1 = document.getElementById('drive-status-lanc');
+      var s2 = document.getElementById('drive-status');
+      if(s1){ s1.className='status-drive ok'; document.getElementById('drive-status-txt-lanc').textContent='✓ Conectado ao Google Drive'; }
+      if(s2){ s2.className='status-drive ok'; document.getElementById('drive-status-txt').textContent='✓ Conectado ao Google Drive'; }
+      var u = document.getElementById('upload-section');
+      if(u) u.style.display='block';
+      var btn = document.getElementById('btn-login-drive');
+      if(btn){ btn.textContent='✓ Conectado'; btn.style.background='#16a34a'; }
       criarPasta().then(listarComprovantes);
-    }
+    },
+    error_callback: function(err){ console.log('Erro OAuth:', err); alert('Erro ao conectar: '+err.type); }
   });
-  tokenClient.requestAccessToken();
+  tokenClient.requestAccessToken({prompt: 'consent'});
 }
 
 async function criarPasta(){
