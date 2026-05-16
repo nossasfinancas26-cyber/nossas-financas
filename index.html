@@ -83,6 +83,10 @@ main{padding:24px 28px;max-width:1400px;margin:0 auto}
 .kc-blue .kpi-val{color:var(--blue)}.kc-gold .kpi-val{color:var(--gold)}.kc-purple .kpi-val{color:var(--purple)}
 .kpi-grid5 .kpi-val{font-size:18px}
 
+/* KPI MODERN */
+.kpi-modern{border-radius:18px;padding:22px;cursor:default;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.kpi-modern:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.18)}
+
 /* FORM */
 .form-card{background:var(--surface);border-radius:16px;padding:22px;margin-bottom:20px;box-shadow:0 1px 8px rgba(0,0,0,.06);border:1px solid var(--border)}
 .form-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:16px}
@@ -733,12 +737,22 @@ function renderResumo(){
   var totalInv = invs.reduce(function(a,i){ return a+i.atual; },0);
   var saldo = receitas - despesas - fatura;
 
-  document.getElementById('kpi-resumo').innerHTML = [
-    {c:'verde', i:'💚', l:'Receitas', v:brl(receitas), s:'este mês'},
-    {c:'vermelho', i:'🔴', l:'Despesas', v:brl(despesas+fatura), s:'incluindo cartão'},
-    {c:saldo>=0?'azul':'vermelho', i:saldo>=0?'💙':'🔴', l:'Saldo', v:brl(saldo), s:saldo>=0?'positivo':'negativo'},
-    {c:'roxo', i:'💜', l:'Investimentos', v:brl(totalInv), s:'patrimônio total'},
-  ].map(function(k){ return '<div class="kpi '+k.c+'"><div class="kpi-top"><div class="kpi-lbl">'+k.l+'</div><div class="kpi-icon-box">'+k.i+'</div></div><div class="kpi-val">'+k.v+'</div><div class="kpi-sub">'+k.s+'</div></div>'; }).join('');
+  var kpiData = [
+    {grad:'linear-gradient(135deg,#16a34a,#4ade80)', i:'↑', l:'Receitas', v:brl(receitas), s:'este mês', pct: receitas>0?'100%':'0%'},
+    {grad:'linear-gradient(135deg,#dc2626,#f87171)', i:'↓', l:'Despesas', v:brl(despesas+fatura), s:'incluindo cartão', pct: receitas>0?Math.min((despesas+fatura)/receitas*100,100).toFixed(0)+'%':'0%'},
+    {grad:saldo>=0?'linear-gradient(135deg,#2563eb,#60a5fa)':'linear-gradient(135deg,#dc2626,#f87171)', i:saldo>=0?'=':'!', l:'Saldo', v:brl(saldo), s:saldo>=0?'positivo':'negativo', pct:''},
+    {grad:'linear-gradient(135deg,#7c3aed,#a78bfa)', i:'◆', l:'Investimentos', v:brl(totalInv), s:'patrimônio total', pct:''},
+  ];
+  document.getElementById('kpi-resumo').innerHTML = kpiData.map(function(k){
+    return '<div class="kpi-modern" style="background:'+k.grad+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">'
+      +'<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.75);font-family:var(--mono)">'+k.l+'</div>'
+      +'<div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff">'+k.i+'</div>'
+      +'</div>'
+      +'<div style="font-size:26px;font-weight:800;color:#fff;margin-bottom:6px;letter-spacing:-.5px">'+k.v+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,.7)">'+k.s+'</div>'
+      +'</div>';
+  }).join('');
 
   // Últimas receitas
   var recs = lancs.filter(function(l){ return l.tipo==='receita'; }).slice(0,5);
